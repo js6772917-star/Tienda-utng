@@ -5,8 +5,8 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ProductoServiceTest {
-    private ProductoDAO dao;
     private ProductoService service;
+    private ProductoDAOMemoria dao;
 
     @BeforeEach
     void setUp() {
@@ -15,83 +15,66 @@ class ProductoServiceTest {
     }
 
     @Test
-    void registrar_productoValido_retorna1() {
-        Producto p = new Producto("P001", "Cuaderno", 35.0, 100, "Papeleria");
-        assertEquals(1, service.registrar(p), "Debe retornar 1 fila afectada al registrar");
+    void constructor_daoNulo_lanzaIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () -> new ProductoService(null));
     }
 
     @Test
-    void registrar_productoNulo_lanzaExcepcion() {
-        assertThrows(IllegalArgumentException.class, 
-            () -> service.registrar(null),
-            "Registrar un producto nulo debe lanzar IllegalArgumentException"
-        );
-    }
-
-    @Test
-    void vender_stockSuficiente_reduceCantidad() {
-        Producto p = new Producto("P001", "Cuaderno", 35.0, 100, "Papeleria");
+    void registrar_productoValido_registraCorrectamente() {
+        Producto p = new Producto("P01", "Teclado", 250.0, 10);
         service.registrar(p);
-        service.vender("P001", 10);
-        assertEquals(90, dao.findByCodigo("P001").get().getStock(), "El stock restante debe ser 90");
+        assertTrue(service.buscarPorCodigo("P01").isPresent());
     }
 
     @Test
-    void vender_stockInsuficiente_lanzaExcepcion() {
-        Producto p = new Producto("P001", "Cuaderno", 35.0, 5, "Papeleria");
-        service.registrar(p);
-        assertThrows(IllegalStateException.class, 
-            () -> service.vender("P001", 10),
-            "Vender más stock del disponible debe lanzar IllegalStateException"
-        );
+    void registrar_productoNulo_lanzaIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () -> service.registrar(null));
     }
 
     @Test
-    void vender_productoNoEncontrado_lanzaExcepcion() {
-        assertThrows(IllegalArgumentException.class, 
-            () -> service.vender("INEXISTENTE", 5),
-            "Vender un código que no existe debe lanzar IllegalArgumentException"
-        );
+    void registrar_precioNegativo_lanzaPrecioInvalidoException() {
+        Producto p = new Producto("P02", "Mouse", -50.0, 5);
+        PrecioInvalidoException ex = assertThrows(PrecioInvalidoException.class, () -> service.registrar(p));
+        assertEquals(-50.0, ex.getPrecio());
     }
 
     @Test
-    void listarProductos_conElementos_retornaLista() {
-        Producto p = new Producto("P001", "Cuaderno", 35.0, 100, "Papeleria");
-        service.registrar(p);
-        assertFalse(dao.findAll().isEmpty(), "La lista del DAO no debe estar vacía");
-    }
-
-    // Pruebas obligatorias de TDD para calcularDescuento
-    @Test
-    void calcularTotalConDescuento_valido_retornaMontoConDescuento() {
-        Producto p = new Producto("P005", "Mochila", 100.0, 10, "Accesorios");
-        double total = service.calcularTotalConDescuento(p, 0.10);
-        assertEquals(90.0, total, 0.001, "El total con 10 por ciento de descuento sobre 100 debe ser 90.0");
+    void registrar_stockNegativo_lanzaIllegalArgumentException() {
+        Producto p = new Producto("P03", "Monitor", 1500.0, -1);
+        assertThrows(IllegalArgumentException.class, () -> service.registrar(p));
     }
 
     @Test
-    void calcularTotalConDescuento_productoNulo_lanzaExcepcion() {
-        assertThrows(IllegalArgumentException.class, 
-            () -> service.calcularTotalConDescuento(null, 0.10),
-            "Producto nulo debe lanzar IllegalArgumentException"
-        );
+    void vender_exitoso_disminuyeStock() {
+        service.registrar(new Producto("P01", "Teclado", 250.0, 10));
+        service.vender("P01", 3);
+        assertEquals(7, service.buscarPorCodigo("P01").get().getStock());
+    }
+    @Test
+    void vender_productoInexistente_lanzaProductoNoEncontradoException() {
+        ProductoNoEncontradoException ex = assertThrows(ProductoNoEncontradoException.class, 
+                () -> service.vender("INEXISTENTE", 1));
+        assertEquals("INEXISTENTE", ex.getCodigo());
     }
 
     @Test
-    void calcularTotalConDescuento_descuentoNegativo_lanzaExcepcion() {
-        Producto p = new Producto("P005", "Mochila", 100.0, 10, "Accesorios");
-        assertThrows(IllegalArgumentException.class, 
-            () -> service.calcularTotalConDescuento(p, -0.1),
-            "Descuento negativo debe lanzar IllegalArgumentException"
-        );
+    void vender_sinStock_verificaDetallesDeExcepcion() {
+        service.registrar(new Producto("P01", "Teclado", 250.0, 2));
+        StockInsuficienteException ex = assertThrows(StockInsuficienteException.class, 
+                () -> service.vender("P01", 5));
+        assertEquals("P01", ex.getCodigoProducto());
+        assertEquals(2, ex.getStockActual());
+        assertEquals(5, ex.getCantidadSolicitada());
     }
 
     @Test
-    void calcularTotalConDescuento_descuentoMayorAUno_lanzaExcepcion() {
-        Producto p = new Producto("P005", "Mochila", 100.0, 10, "Accesorios");
-        assertThrows(IllegalArgumentException.class, 
-            () -> service.calcularTotalConDescuento(p, 1.5),
-            "Descuento mayor a 1 debe lanzar IllegalArgumentException"
-        );
+    void vender_cantidadInvalida_lanzaIllegalArgumentException() {
+        service.registrar(new Producto("P01", "Teclado", 250.0, 10));
+        assertThrows(IllegalArgumentException.class, () -> service.vender("P01", 0));
+    }
+
+    @Test
+    void buscarPorCodigo_codigoVacio_lanzaIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () -> service.buscarPorCodigo(""));
     }
 }

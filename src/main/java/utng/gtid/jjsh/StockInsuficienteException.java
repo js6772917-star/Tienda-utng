@@ -5,17 +5,12 @@ public class StockInsuficienteException extends RuntimeException {
     private final int stockActual;
     private final int cantidadSolicitada;
 
-    /**
-     * Constructor para StockInsuficienteException.
-     * @param codigo código del producto
-     * @param actual stock disponible actual
-     * @param solicitado cantidad que se intentó vender
-     */
-    public StockInsuficienteException(String codigo, int actual, int solicitado) {
-        super(String.format("Stock insuficiente para '%s': disponible=%d, solicitado=%d", codigo, actual, solicitado));
-        this.codigoProducto = codigo;
-        this.stockActual = actual;
-        this.cantidadSolicitada = solicitado;
+    public StockInsuficienteException(String codigoProducto, int stockActual, int cantidadSolicitada) {
+        super(String.format("Stock insuficiente para el producto '%s'. Actual: %d, Solicitado: %d",
+                codigoProducto, stockActual, cantidadSolicitada));
+        this.codigoProducto = codigoProducto;
+        this.stockActual = stockActual;
+        this.cantidadSolicitada = cantidadSolicitada;
     }
 
     public String getCodigoProducto() { return codigoProducto; }

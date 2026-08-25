@@ -1,14 +1,16 @@
 package utng.gtid.jjsh;
 
+/**
+ * Excepcion lanzada cuando se intenta asignar un precio negativo a un producto.
+ */
 public class PrecioInvalidoException extends RuntimeException {
     private final double precio;
 
     /**
-     * Constructor para PrecioInvalidoException.
-     * @param precio valor de precio inválido ingresado
+     * @param precio Valor del precio invalido.
      */
     public PrecioInvalidoException(double precio) {
-        super("Precio invalido: " + precio + ". Debe ser mayor o igual a 0.");
+        super(String.format("El precio %.2f es invalido. Debe ser mayor o igual a 0.", precio));
         this.precio = precio;
     }
 
